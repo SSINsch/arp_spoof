@@ -37,7 +37,7 @@ void getVictimMac(u_char *Ipaddress, const struct pcap_pkthdr *pkthdr, const u_c
         for(int i = 0; i<4; i++){
         	printf("%d ", arph->arp_spa[i]);
         }	
-        printf("\n");
+        printf("\ndst:");
         for(int i = 0; i<4; i++){
         	printf("%d ", arph->arp_tpa[i]);
         }	

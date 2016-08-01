@@ -10,8 +10,7 @@
 #include <string.h>
 #include <netinet/in.h> // for ntohs() function
 #include <netinet/ip.h>
-#include <signal.h>
-#include <sys/time.h>
+#include <time.h>
 
 
 #define ERRBUF_SIZE			100
@@ -33,4 +32,3 @@ int pcap_victiom_to_GW(struct in_addr victimIp, struct in_addr GWIp, struct ethe
 						struct in_addr attackerIp, char* device, pcap_t *pcd, const u_char* packet);
 
 int isbroadcast(const u_char* packet, struct in_addr IP);
-void timer_handler (int signum);

