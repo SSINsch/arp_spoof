@@ -1,15 +1,17 @@
 ————————————————————————————————————
 
-pcap_send 
+arp_spoofing (only for sender-victim)
 ============
 send infected packet to the victim
+and relay the victim's packet
 
 
-+ get [IP address, MAC address] of attacker's computer
-+ get [IP address] of Gateway
-+ get [IP address, MAC address] of victim's computer by sending broadcast ARP pakcet
-+ make the infected packet
-+ send to the victim
++ check if victim send the broadcast packet to get Gateway IP
++ check if Gateway send the broadcast packet
++ check if timeover
++ IF SO, send the infected packet to the victim once more
+
++ if there is the packet which is from the victim to the Gateway, relay it
 + ???
 + ##PROFIT!
 
