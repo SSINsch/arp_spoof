@@ -14,7 +14,7 @@
 
 
 #define ERRBUF_SIZE			100
-#define PACKET_MAX_BYTES	300
+#define PACKET_MAX_BYTES	2000
 #define PROMISCUOUS_MODE	1
 #define NON_PROMISCUOUS		0
 #define WAIT_MAX_TIME		1
@@ -28,7 +28,7 @@ void ARPreply(struct ether_addr targetMac,	struct in_addr targetIp,
 void ARPrequest(struct in_addr targetIp, struct ether_addr senderMac,	struct in_addr senderIp,	pcap_t *pcd);
 int pcapCapture(struct in_addr* Ip, char* device, pcap_t *pcd, const u_char* packet);
 void getVictimMac(u_char *Ipaddress, const struct pcap_pkthdr *pkthdr, const u_char *packet, int* pflag);
-int pcap_from_victiom(struct in_addr victimIp, struct in_addr destIp, struct ether_addr destMac, struct ether_addr myMac,
+int pcap_from_victiom(struct in_addr *victimIp, struct in_addr *destIp, struct ether_addr *destMac, struct ether_addr *myMac,
 						char* device, pcap_t *pcd, struct pcap_pkthdr *pkthdr, const u_char* packet);
 int isbroadcast(const u_char* packet, struct in_addr IP);
 void print_dump(const u_char* packet);
