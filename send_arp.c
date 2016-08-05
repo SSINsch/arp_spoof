@@ -27,7 +27,7 @@ void ARPrequest(struct in_addr targetIp, struct ether_addr senderMac,	struct in_
     // make (ETHERNET + ARP) packet
     memcpy(packet, &eth, ETHERNET_LEN);
     memcpy(packet+ETHERNET_LEN, &arph, ARP_LEN);
-    if(pcap_sendpacket(pcd, packet, sizeof(packet)) == -1)
+    if(pcap_sendpacket(pcd, packet, ETHERNET_LEN+ARP_LEN) == -1)
     	printf("ARPrequets: pcap_sendpacket error\n");
 }
 
@@ -57,7 +57,7 @@ void ARPreply(struct ether_addr targetMac,	struct in_addr targetIp,
     // make (ETHERNET + ARP) packet
     memcpy(packet, &eth, ETHERNET_LEN);
     memcpy(packet+ETHERNET_LEN, &arph, ARP_LEN);
-    if(pcap_sendpacket(pcd, packet, sizeof(packet)) == -1)
+    if(pcap_sendpacket(pcd, packet, ETHERNET_LEN+ARP_LEN) == -1)
     	printf("ARP relay: pcap_sendpacket error\n");
 }
 

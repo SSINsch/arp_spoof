@@ -28,7 +28,7 @@ void ARPreply(struct ether_addr targetMac,	struct in_addr targetIp,
 void ARPrequest(struct in_addr targetIp, struct ether_addr senderMac,	struct in_addr senderIp,	pcap_t *pcd);
 int pcapCapture(struct in_addr* Ip, char* device, pcap_t *pcd, const u_char* packet);
 void getVictimMac(u_char *Ipaddress, const struct pcap_pkthdr *pkthdr, const u_char *packet, int* pflag);
-int pcap_victiom_to_GW(struct in_addr victimIp, struct in_addr GWIp, struct ether_addr attackerMac,
-						struct in_addr attackerIp, char* device, pcap_t *pcd, const u_char* packet);
-
+int pcap_from_victiom(struct in_addr victimIp, struct in_addr destIp, struct ether_addr destMac, struct ether_addr myMac,
+						char* device, pcap_t *pcd, struct pcap_pkthdr *pkthdr, const u_char* packet);
 int isbroadcast(const u_char* packet, struct in_addr IP);
+void print_dump(const u_char* packet);
