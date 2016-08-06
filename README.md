@@ -5,6 +5,7 @@ arp_spoofing (only for sender-victim)
 send infected packet to the victim
 and relay the victim's packet
 
+// incomplete. checksum load off??? MTU size ???
 
 + check if victim send the broadcast packet to get Gateway IP
 + check if Gateway send the broadcast packet
