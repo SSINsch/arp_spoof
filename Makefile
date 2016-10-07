@@ -1,20 +1,21 @@
-all: arp_spoof
+OBJECTS = main.o myIP.o myMAC.o myPcap.o myARP.o
+SRCS = main.cpp myIP.cpp myMAC.cpp myPcap.cpp myARP.cpp
+LDFLAGS = -lpcap
 
-arp_spoof: arp_spoof.o send_arp.o pcap.o main.o
-	gcc -g -o arp_spoof arp_spoof.o send_arp.o pcap.o main.o -lpcap
+CFLAGS = -g -c
 
-arp_spoof.o: send_arp.h arp_spoof.c
-	gcc -g -o arp_spoof.o -c arp_spoof.c
-        
-send_arp.o: send_arp.h send_arp.c
-	gcc -g -o send_arp.o -c send_arp.c
+TARGET = arp_spoof
 
-pcap.o: send_arp.h pcap.c
-	gcc -g -o pcap.o -c pcap.c
-
-main.o: send_arp.h main.c
-	gcc -g -o main.o -c main.c
+$(TARGET): $(OBJECTS)
+	$(CXX) -o $(TARGET) $(OBJECTS) $(LDFLAGS)
 
 clean:
-	rm -f *.o arp_spoof
+	rm -f *.o
 	rm -f *.txt
+
+  
+myIP.o : myARPspoofing.h myIP.cpp
+myMAC.o : myARPspoofing.h myMAC.cpp
+main.o : myARPspoofing.h main.cpp
+myPcap.o:  myARPspoofing.h myPcap.cpp
+myARP.o: myARPspoofing.h myARP.cpp
