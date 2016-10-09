@@ -70,4 +70,7 @@ public:
 	int pcapCapture(struct in_addr* ip, struct ether_addr *victim_mac);
 	void sendARPpacket(myARPheader packet);
 	bool isBroadcast(struct in_addr ip);
+	void dumpPayload(const u_char *payload, int len);
+	int arpSpoofing(myARPheader arph, myIP ip_info, myMAC mac_info, struct in_addr victim_ip, struct ether_addr target_mac);
+	int packetRelay(myIP ip_info, myMAC mac_info, struct in_addr victim_ip, struct ether_addr target_mac);
 };

